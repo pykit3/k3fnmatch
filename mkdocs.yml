@@ -1,5 +1,5 @@
 site_name: k3fnmatch
-site_description: DESCRIPTION
+site_description: Enhanced fnmatch with grouping regex and path transformation utilities
 site_url: https://k3fnmatch.readthedocs.io
 repo_url: https://github.com/pykit3/k3fnmatch
 repo_name: pykit3/k3fnmatch
