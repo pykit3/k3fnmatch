@@ -20,8 +20,7 @@ class TestTranslate(unittest.TestCase):
         for pattern, path, should_match in cases:
             regex = k3fnmatch.translate(pattern)
             matches = re.match(regex, path) is not None
-            self.assertEqual(matches, should_match,
-                           f"Pattern {pattern} vs {path}")
+            self.assertEqual(matches, should_match, f"Pattern {pattern} vs {path}")
 
     def test_double_star(self):
         """Test ** for multi-segment matching"""
@@ -75,11 +74,11 @@ class TestTranslate(unittest.TestCase):
         # Pattern **/*.md produces 5 groups: ('', multi-segment, '/', single-segment, '.md')
         self.assertEqual(len(groups), 5)
         # Verify key captured segments
-        self.assertEqual(groups[0], '')  # Empty prefix before **
-        self.assertEqual(groups[1], 'foo/bar')  # Multi-segment match
-        self.assertEqual(groups[2], '/')  # Separator
-        self.assertEqual(groups[3], 'doc')  # Filename
-        self.assertEqual(groups[4], '.md')  # Extension
+        self.assertEqual(groups[0], "")  # Empty prefix before **
+        self.assertEqual(groups[1], "foo/bar")  # Multi-segment match
+        self.assertEqual(groups[2], "/")  # Separator
+        self.assertEqual(groups[3], "doc")  # Filename
+        self.assertEqual(groups[4], ".md")  # Extension
 
     def test_escaped_chars(self):
         """Test escaping special characters"""
@@ -116,44 +115,27 @@ class TestFnmap(unittest.TestCase):
         ]
         for src, src_pat, dst_pat, expected in cases:
             result = k3fnmatch.fnmap(src, src_pat, dst_pat)
-            self.assertEqual(result, expected,
-                           f"{src} + {src_pat} → {dst_pat}")
+            self.assertEqual(result, expected, f"{src} + {src_pat} → {dst_pat}")
 
     def test_multiple_wildcards(self):
         """Test multiple wildcards in pattern"""
-        result = k3fnmatch.fnmap(
-            "docs/guide/intro.md",
-            "*/*/*.md",
-            "*/*/*.html"
-        )
+        result = k3fnmatch.fnmap("docs/guide/intro.md", "*/*/*.md", "*/*/*.html")
         self.assertEqual(result, "docs/guide/intro.html")
 
     def test_star_with_single_char(self):
         """Test * matching single character"""
         # Use * for both src and dst patterns
-        result = k3fnmatch.fnmap(
-            "file1.txt",
-            "file*.txt",
-            "file*-new.txt"
-        )
+        result = k3fnmatch.fnmap("file1.txt", "file*.txt", "file*-new.txt")
         self.assertEqual(result, "file1-new.txt")
 
     def test_mixed_wildcards(self):
         """Test mixing ** and * wildcards"""
-        result = k3fnmatch.fnmap(
-            "src/foo/bar/test.py",
-            "src/**/*.py",
-            "dist/**/*.js"
-        )
+        result = k3fnmatch.fnmap("src/foo/bar/test.py", "src/**/*.py", "dist/**/*.js")
         self.assertEqual(result, "dist/foo/bar/test.js")
 
     def test_no_wildcards(self):
         """Test pattern without wildcards"""
-        result = k3fnmatch.fnmap(
-            "file.txt",
-            "file.txt",
-            "newfile.txt"
-        )
+        result = k3fnmatch.fnmap("file.txt", "file.txt", "newfile.txt")
         self.assertEqual(result, "newfile.txt")
 
 

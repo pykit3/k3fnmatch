@@ -34,7 +34,7 @@ def translate(pat: str) -> str:
         False
     """
     # Sentinel objects for star types
-    STAR: Any = object()   # "*" - single segment
+    STAR: Any = object()  # "*" - single segment
     STAR2: Any = object()  # "**" - multi segment
 
     def is_star(v: Any) -> bool:
@@ -105,9 +105,7 @@ def translate(pat: str) -> str:
                             del chunks[k]
                     # Escape backslashes and hyphens for set difference (--).
                     # Hyphens that create ranges shouldn't be escaped.
-                    stuff = "-".join(
-                        s.replace("\\", r"\\").replace("-", r"\-") for s in chunks
-                    )
+                    stuff = "-".join(s.replace("\\", r"\\").replace("-", r"\-") for s in chunks)
                 # Escape set operations (&&, ~~ and ||).
                 stuff = re.sub(r"([&~|])", r"\\\1", stuff)
                 i = j + 1
