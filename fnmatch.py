@@ -13,6 +13,7 @@ def translate(pat: str) -> str:
     - Supports * for single-segment matching (no /)
     - Supports ? for single character
     - Supports [...] for character classes
+    - Supports backslash escaping: \\*, \\?, \\[, \\], \\\\
 
     Args:
         pat: Shell pattern with wildcards
@@ -32,6 +33,10 @@ def translate(pat: str) -> str:
         True
         >>> bool(re.match(pattern, "dir/file.txt"))
         False
+
+        >>> pattern = translate(r"file\\*.txt")
+        >>> bool(re.match(pattern, "file*.txt"))
+        True
     """
     # Sentinel objects for star types
     STAR: Any = object()  # "*" - single segment
@@ -58,7 +63,23 @@ def translate(pat: str) -> str:
     while i < n:
         c = pat[i]
         i = i + 1
-        if c == "*":
+
+        # Handle backslash escaping
+        if c == "\\":
+            if i < n:
+                next_char = pat[i]
+                # Escape special characters: * ? [ ] \
+                if next_char in "*?[]\\":
+                    # Add the escaped character as a literal regex-escaped string
+                    add(re.escape(next_char))
+                    i = i + 1
+                    continue
+                # Not a special char, treat backslash as literal
+                add(re.escape(c))
+            else:
+                # Trailing backslash - treat as literal
+                add(re.escape(c))
+        elif c == "*":
             add(STAR)
 
             # compress "**", "**..." to "**"

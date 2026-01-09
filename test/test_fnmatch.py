@@ -210,5 +210,159 @@ class TestEdgeCases(unittest.TestCase):
             self.assertEqual(matches, should_match)
 
 
+class TestBackslashEscaping(unittest.TestCase):
+    """Test backslash escaping of special characters"""
+
+    def test_escaped_star(self):
+        """\\* should match literal asterisk"""
+        pattern = k3fnmatch.translate(r"file\*.txt")
+        self.assertTrue(re.match(pattern, "file*.txt"))
+        self.assertFalse(re.match(pattern, "fileABC.txt"))
+
+    def test_escaped_question_mark(self):
+        """\\? should match literal question mark"""
+        pattern = k3fnmatch.translate(r"file\?.txt")
+        self.assertTrue(re.match(pattern, "file?.txt"))
+        self.assertFalse(re.match(pattern, "filea.txt"))
+
+    def test_escaped_brackets(self):
+        """\\[1\\] should match literal [1]"""
+        pattern = k3fnmatch.translate(r"file\[1\].txt")
+        self.assertTrue(re.match(pattern, "file[1].txt"))
+        self.assertFalse(re.match(pattern, "file1.txt"))
+
+    def test_double_backslash(self):
+        """\\\\\\\ represents escaped backslash"""
+        pattern = k3fnmatch.translate(r"file\\name.txt")
+        self.assertTrue(re.match(pattern, r"file\name.txt"))
+
+    def test_windows_path_pattern(self):
+        """C:\\\\path\\\\*.txt for Windows paths"""
+        pattern = k3fnmatch.translate(r"C:\\Users\\*.txt")
+        self.assertTrue(re.match(pattern, r"C:\Users\file.txt"))
+        self.assertFalse(re.match(pattern, r"C:\Users\sub\file.txt"))
+
+    def test_backslash_before_non_special(self):
+        """Backslash before non-special char is treated as literal backslash"""
+        pattern = k3fnmatch.translate(r"a\b.txt")
+        # \b is not an escape sequence, so it matches literal backslash + b
+        self.assertTrue(re.match(pattern, r"a\b.txt"))
+        self.assertFalse(re.match(pattern, "ab.txt"))
+
+    def test_trailing_backslash(self):
+        """Pattern ending with backslash"""
+        pattern = k3fnmatch.translate(r"file\\")
+        self.assertTrue(re.match(pattern, "file\\"))
+
+    def test_mixed_escaped_and_wildcard(self):
+        """Mix of escaped and unescaped wildcards"""
+        # \* is literal asterisk, then * is wildcard
+        pattern = k3fnmatch.translate(r"file\**")
+        self.assertTrue(re.match(pattern, "file*test"))
+        self.assertTrue(re.match(pattern, "file*"))
+        self.assertFalse(re.match(pattern, "filetest"))
+
+
+class TestFnmapEdgeCases(unittest.TestCase):
+    """Test fnmap edge cases and error conditions"""
+
+    def test_path_not_matching_pattern(self):
+        """Path that doesn't match source pattern returns empty"""
+        src = "completely/different/path.txt"
+        # When path doesn't match, fnmap returns empty string
+        result = k3fnmatch.fnmap(src, "foo/**/*.md", "bar/**/*.html")
+        self.assertEqual(result, "")
+
+    def test_empty_path_and_pattern(self):
+        """Empty path and pattern"""
+        result = k3fnmatch.fnmap("", "", "")
+        self.assertEqual(result, "")
+
+    def test_inserting_fixed_segments(self):
+        """Insert fixed segments in destination"""
+        src = "foo/bar.md"
+        result = k3fnmatch.fnmap(src, "foo/*.md", "dist/output/*-final.html")
+        self.assertEqual(result, "dist/output/bar-final.html")
+
+    def test_fnmap_with_only_single_star(self):
+        """Pattern with only a single star"""
+        src = "anything.txt"
+        result = k3fnmatch.fnmap(src, "*.txt", "*-copy.txt")
+        self.assertEqual(result, "anything-copy.txt")
+
+    def test_multiple_directory_levels(self):
+        """Transform paths with multiple directory levels"""
+        src = "a/b/c/d/e.txt"
+        result = k3fnmatch.fnmap(src, "a/**/*.txt", "z/**/*.log")
+        self.assertEqual(result, "z/b/c/d/e.log")
+
+    def test_rearrange_path_components(self):
+        """Change order of path components using multiple patterns"""
+        src = "docs/api/function.md"
+        result = k3fnmatch.fnmap(src, "docs/*/*.md", "web/*/*.html")
+        self.assertEqual(result, "web/api/function.html")
+
+    def test_mixed_fixed_and_wildcard_transformation(self):
+        """Mix of fixed text and wildcards in both patterns"""
+        src = "project-v2/src/main.py"
+        result = k3fnmatch.fnmap(src, "project-v2/src/*.py", "project-v3/dist/*.js")
+        self.assertEqual(result, "project-v3/dist/main.js")
+
+    def test_consecutive_wildcards_in_pattern(self):
+        """Pattern with consecutive star wildcards"""
+        src = "a/b.txt"
+        result = k3fnmatch.fnmap(src, "*/*.txt", "*/*-new.txt")
+        self.assertEqual(result, "a/b-new.txt")
+
+
+class TestCharacterClassEdgeCases(unittest.TestCase):
+    """Test character class edge cases
+
+    Note: Like Python's standard fnmatch, k3fnmatch does not support:
+    - Backslash escaping within character classes (e.g., [a\]b])
+    - Empty negated classes (e.g., [!])
+    These limitations are consistent with fnmatch behavior.
+    """
+
+    def test_empty_character_class(self):
+        """Empty class should not match anything"""
+        pattern = k3fnmatch.translate("file[].txt")
+        self.assertFalse(re.match(pattern, "file.txt"))
+        self.assertFalse(re.match(pattern, "filea.txt"))
+
+    def test_dash_at_start_of_class(self):
+        """[-abc] matches -, a, b, or c"""
+        pattern = k3fnmatch.translate("file[-abc].txt")
+        self.assertTrue(re.match(pattern, "file-.txt"))
+        self.assertTrue(re.match(pattern, "filea.txt"))
+        self.assertFalse(re.match(pattern, "filed.txt"))
+
+    def test_dash_at_end_of_class(self):
+        """[abc-] matches a, b, c, or -"""
+        pattern = k3fnmatch.translate("file[abc-].txt")
+        self.assertTrue(re.match(pattern, "file-.txt"))
+        self.assertTrue(re.match(pattern, "fileb.txt"))
+
+    def test_multiple_ranges_in_class(self):
+        """[a-zA-Z0-9] for alphanumeric"""
+        pattern = k3fnmatch.translate("file[a-zA-Z0-9].txt")
+        self.assertTrue(re.match(pattern, "filea.txt"))
+        self.assertTrue(re.match(pattern, "fileZ.txt"))
+        self.assertTrue(re.match(pattern, "file5.txt"))
+        self.assertFalse(re.match(pattern, "file-.txt"))
+
+    def test_backslash_in_character_class(self):
+        """[\\\\] matches literal backslash"""
+        pattern = k3fnmatch.translate(r"file[\\].txt")
+        self.assertTrue(re.match(pattern, r"file\.txt"))
+
+    def test_negated_range(self):
+        """[!a-z] matches any char except lowercase letters"""
+        pattern = k3fnmatch.translate("file[!a-z].txt")
+        self.assertTrue(re.match(pattern, "fileA.txt"))
+        self.assertTrue(re.match(pattern, "file1.txt"))
+        self.assertFalse(re.match(pattern, "filea.txt"))
+
+
 if __name__ == "__main__":
     unittest.main()
