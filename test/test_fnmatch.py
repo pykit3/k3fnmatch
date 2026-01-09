@@ -232,7 +232,7 @@ class TestBackslashEscaping(unittest.TestCase):
         self.assertFalse(re.match(pattern, "file1.txt"))
 
     def test_double_backslash(self):
-        """\\\\\\\ represents escaped backslash"""
+        r"""Four backslashes represent escaped backslash"""
         pattern = k3fnmatch.translate(r"file\\name.txt")
         self.assertTrue(re.match(pattern, r"file\name.txt"))
 
@@ -316,7 +316,7 @@ class TestFnmapEdgeCases(unittest.TestCase):
 
 
 class TestCharacterClassEdgeCases(unittest.TestCase):
-    """Test character class edge cases
+    r"""Test character class edge cases
 
     Note: Like Python's standard fnmatch, k3fnmatch does not support:
     - Backslash escaping within character classes (e.g., [a\]b])
