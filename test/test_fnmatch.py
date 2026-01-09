@@ -363,6 +363,67 @@ class TestCharacterClassEdgeCases(unittest.TestCase):
         self.assertTrue(re.match(pattern, "file1.txt"))
         self.assertFalse(re.match(pattern, "filea.txt"))
 
+    def test_invalid_reversed_range(self):
+        """Test reversed ranges like [z-a] where end < start"""
+        pattern = k3fnmatch.translate("file[z-a].txt")
+        # Invalid range should be removed/empty
+        self.assertFalse(re.match(pattern, "filez.txt"))
+        self.assertFalse(re.match(pattern, "filea.txt"))
+
+    def test_mixed_valid_invalid_ranges(self):
+        """Test pattern with both valid and invalid ranges"""
+        pattern = k3fnmatch.translate("file[a-z9-0].txt")
+        # Valid range [a-z] should work
+        self.assertTrue(re.match(pattern, "filea.txt"))
+        self.assertTrue(re.match(pattern, "filez.txt"))
+        # Invalid range [9-0] should be removed
+        self.assertFalse(re.match(pattern, "file5.txt"))
+        self.assertFalse(re.match(pattern, "file0.txt"))
+
+    def test_overlapping_ranges(self):
+        """Test overlapping character ranges"""
+        # [a-mh-s] has ranges that overlap: a-m and h-s overlap at h-m
+        pattern = k3fnmatch.translate("file[a-mh-s].txt")
+        # Within first range [a-m]
+        self.assertTrue(re.match(pattern, "filea.txt"))
+        self.assertTrue(re.match(pattern, "filem.txt"))
+        # Within second range [h-s]
+        self.assertTrue(re.match(pattern, "fileh.txt"))
+        self.assertTrue(re.match(pattern, "files.txt"))
+        # In overlap region
+        self.assertTrue(re.match(pattern, "filek.txt"))
+        # Outside both ranges should fail
+        self.assertFalse(re.match(pattern, "filet.txt"))
+        self.assertFalse(re.match(pattern, "filez.txt"))
+
+
+class TestCharacterClassSpecialCases(unittest.TestCase):
+    """Test character class special cases for uncovered lines"""
+
+    def test_empty_class_after_range_processing(self):
+        """Test pattern where all ranges are invalid and removed"""
+        # All invalid ranges should result in empty class
+        pattern = k3fnmatch.translate("file[z-a9-0Z-A].txt")
+        # Empty class matches nothing
+        self.assertFalse(re.match(pattern, "filea.txt"))
+        self.assertFalse(re.match(pattern, "file1.txt"))
+        self.assertFalse(re.match(pattern, "fileZ.txt"))
+
+    def test_character_class_starting_with_bracket(self):
+        """Test class with literal [ at start"""
+        # Pattern: file[[abc].txt matches [, a, b, or c
+        pattern = k3fnmatch.translate("file[[abc].txt")
+        self.assertTrue(re.match(pattern, "file[.txt"))
+        self.assertTrue(re.match(pattern, "filea.txt"))
+        self.assertTrue(re.match(pattern, "fileb.txt"))
+
+    def test_truly_trailing_backslash(self):
+        """Pattern ending with single backslash character"""
+        # Create pattern with terminal backslash
+        pattern = k3fnmatch.translate("file" + chr(92))
+        self.assertTrue(re.match(pattern, "file\\"))
+        self.assertFalse(re.match(pattern, "file"))
+
 
 if __name__ == "__main__":
     unittest.main()
