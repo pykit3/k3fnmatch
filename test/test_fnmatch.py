@@ -102,6 +102,26 @@ class TestTranslate(unittest.TestCase):
         self.assertEqual(regex1, regex2)
         self.assertEqual(regex1, regex3)
 
+    def test_regex_format(self):
+        """Test exact regex output format from original test suite"""
+        # Test simple * pattern
+        self.assertEqual(
+            r"(?s:(foo/)((?:[^/\\]|\\/|\\\\)*?)(\.md))\Z",
+            k3fnmatch.translate(r"foo/*.md"),
+        )
+
+        # Test ** pattern
+        self.assertEqual(
+            r"(?s:(foo/)(.*?)(/)((?:[^/\\]|\\/|\\\\)*?)(\.md))\Z",
+            k3fnmatch.translate(r"foo/**/*.md"),
+        )
+
+        # Test ** with fixed middle segment
+        self.assertEqual(
+            r"(?s:(foo/)(.*?)(/d/)((?:[^/\\]|\\/|\\\\)*?)(\.md))\Z",
+            k3fnmatch.translate(r"foo/**/d/*.md"),
+        )
+
 
 class TestFnmap(unittest.TestCase):
     """Test fnmap() path transformation"""
@@ -137,6 +157,28 @@ class TestFnmap(unittest.TestCase):
         """Test pattern without wildcards"""
         result = k3fnmatch.fnmap("file.txt", "file.txt", "newfile.txt")
         self.assertEqual(result, "newfile.txt")
+
+    def test_original_md2zhihu_cases(self):
+        """Test cases from original md2zhihu test suite"""
+        src = r"foo/x/y/z/d/bar.md"
+
+        # Replace prefix: foo -> bar
+        self.assertEqual(
+            r"bar/x/y/z/d/bar.cn.md",
+            k3fnmatch.fnmap(src, r"foo/**/*.md", r"bar/**/*.cn.md"),
+        )
+
+        # Match with fixed middle segment /d/
+        self.assertEqual(
+            r"bar/x/y/z/d/bar.cn.md",
+            k3fnmatch.fnmap(src, r"foo/**/d/*.md", r"bar/**/d/*.cn.md"),
+        )
+
+        # Insert new segment /f/ in destination
+        self.assertEqual(
+            r"bar/x/y/z/d/f/bar.cn.md",
+            k3fnmatch.fnmap(src, r"foo/**/*.md", r"bar/**/f/*.cn.md"),
+        )
 
 
 class TestEdgeCases(unittest.TestCase):
