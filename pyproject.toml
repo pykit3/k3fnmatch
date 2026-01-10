@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "k3fnmatch"
-version = "0.1.0"
+version = "0.1.1"
 description = "Enhanced fnmatch with grouping regex and path transformation"
 readme = "README.md"
 license = {text = "MIT"}
