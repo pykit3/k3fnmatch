@@ -64,30 +64,19 @@ def translate(pat: str) -> str:
         c = pat[i]
         i = i + 1
 
-        # Handle backslash escaping
         if c == "\\":
-            if i < n:
-                next_char = pat[i]
-                # Escape special characters: * ? [ ] \
-                if next_char in "*?[]\\":
-                    # Add the escaped character as a literal regex-escaped string
-                    add(re.escape(next_char))
-                    i = i + 1
-                    continue
-                # Not a special char, treat backslash as literal
-                add(re.escape(c))
+            if i < n and pat[i] in "*?[]\\":
+                add(re.escape(pat[i]))
+                i += 1
             else:
-                # Trailing backslash - treat as literal
                 add(re.escape(c))
         elif c == "*":
             add(STAR)
 
             # compress "**", "**..." to "**"
-            if len(res) >= 2:
-                if res[-1] is STAR:
-                    if res[-2] is STAR or res[-2] is STAR2:
-                        res.pop()
-                        res[-1] = STAR2
+            if len(res) >= 2 and res[-1] is STAR and is_star(res[-2]):
+                res.pop()
+                res[-1] = STAR2
         elif c == "?":
             add(".")
         elif c == "[":
@@ -184,10 +173,8 @@ def translate(pat: str) -> str:
 
         fixed_str = "".join(fixed)
 
-        if fixed_str == "":
-            add(star_to_regex(star))
-        else:
-            add(star_to_regex(star))
+        add(star_to_regex(star))
+        if fixed_str:
             add("(" + fixed_str + ")")
 
     assert i == n
