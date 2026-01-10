@@ -20,7 +20,7 @@ from importlib.metadata import version
 
 __version__ = version("k3fnmatch")
 
-from .fnmatch import (
+from .pattern import (
     translate,
     fnmap,
 )

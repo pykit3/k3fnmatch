@@ -76,7 +76,7 @@ print(result)  # "src/module-backup.py"
 
 ## API Reference
 
-::: k3fnmatch.fnmatch
+::: k3fnmatch.pattern
 
 ## License
 
