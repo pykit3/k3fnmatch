@@ -21,11 +21,11 @@ from importlib.metadata import version
 __version__ = version("k3fnmatch")
 
 from .pattern import (
-    translate,
     fnmap,
+    translate,
 )
 
 __all__ = [
-    "translate",
     "fnmap",
+    "translate",
 ]

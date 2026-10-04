@@ -48,19 +48,11 @@ Transform paths using source and destination patterns:
 import k3fnmatch
 
 # Convert .md to .html
-result = k3fnmatch.fnmap(
-    "docs/guide/intro.md",
-    "**/*.md",
-    "**/*.html"
-)
+result = k3fnmatch.fnmap("docs/guide/intro.md", "**/*.md", "**/*.html")
 print(result)  # "docs/guide/intro.html"
 
 # Add suffix to filenames
-result = k3fnmatch.fnmap(
-    "src/module.py",
-    "*/*.py",
-    "*/*-backup.py"
-)
+result = k3fnmatch.fnmap("src/module.py", "*/*.py", "*/*-backup.py")
 print(result)  # "src/module-backup.py"
 ```
 
