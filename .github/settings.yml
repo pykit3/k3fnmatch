@@ -1,0 +1,6 @@
+_extends: gh-config
+
+repository:
+  description: Enhanced fnmatch with grouping regex and path transformation
+  homepage: https://blog.openacid.com
+  topics: fnmatch, glob, pattern, path, regex, wildcard
