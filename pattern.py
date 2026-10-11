@@ -150,9 +150,8 @@ def translate(pat: str) -> str:
     add(")")
 
     # Now deal with STAR fixed STAR fixed ...
-    # For an interior `STAR fixed` pairing, we want to do a minimal
-    # .*? match followed by `fixed`, with no possibility of backtracking.
-    # Atomic groups ("(?>...)") allow us to spell that directly.
+    # Each STAR becomes a minimal `*?` capture group, and each `fixed`
+    # becomes a capture group after it.
     # Note: people rely on the undocumented ability to join multiple
     # translate() results together via "|" to build large regexps matching
     # "one of many" shell patterns.
@@ -218,7 +217,7 @@ def fnmap(src_path: str, src_pattern: str, dst_pattern: str) -> str:
 
     src_parts = m.groups()
 
-    #  (?s:(foo/)(?>(.*?)(/d/))(.*)(\.md))\Z
+    #  (?s:(foo/)(.*?)(/d/)((?:[^/\\]|\\/|\\\\)*?)(\.md))\Z
     #  src_parts:     ['foo/', 'x/y/z', '/d/', 'bar', '.md']
     #  dst_parts: ['bar/', '**', '/d/', '*', '.cn.md']
     #
