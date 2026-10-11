@@ -287,6 +287,19 @@ class TestFnmapEdgeCases(unittest.TestCase):
             result = k3fnmatch.fnmap(src, src_pat, dst_pat)
             self.assertEqual(result, expected, f"{src} + {src_pat} → {dst_pat}")
 
+    def test_empty_wildcard_match(self):
+        """Wildcard that matches an empty string"""
+        cases = [
+            ("a.md", "a*.md", "b*.md", "b.md"),
+            ("ab", "a*b", "c*d", "cd"),
+            ("x/a.md", "x/**a.md", "y/**b.md", "y/b.md"),
+            ("", "*", "*-copy", "-copy"),
+        ]
+
+        for src, src_pat, dst_pat, expected in cases:
+            result = k3fnmatch.fnmap(src, src_pat, dst_pat)
+            self.assertEqual(result, expected, f"{src} + {src_pat} → {dst_pat}")
+
     def test_wildcard_count_mismatch(self):
         """Destination pattern with a different number of wildcards"""
         with self.assertRaises(ValueError):
