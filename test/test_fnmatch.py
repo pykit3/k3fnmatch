@@ -270,6 +270,31 @@ class TestFnmapEdgeCases(unittest.TestCase):
         result = k3fnmatch.fnmap(src, "foo/**/*.md", "bar/**/*.html")
         self.assertEqual(result, "")
 
+        # A path that only ends with a match does not match either
+        result = k3fnmatch.fnmap("a/foo/b.md", "foo/*.md", "x/*.md")
+        self.assertEqual(result, "")
+
+    def test_trailing_wildcard(self):
+        """Source pattern that ends with a wildcard"""
+        cases = [
+            ("abc", "*", "*", "abc"),
+            ("abc", "*", "*-copy", "abc-copy"),
+            ("a/b", "**", "**", "a/b"),
+            ("a/b.md", "**/*", "x/**/*.txt", "x/a/b.md.txt"),
+        ]
+
+        for src, src_pat, dst_pat, expected in cases:
+            result = k3fnmatch.fnmap(src, src_pat, dst_pat)
+            self.assertEqual(result, expected, f"{src} + {src_pat} → {dst_pat}")
+
+    def test_wildcard_count_mismatch(self):
+        """Destination pattern with a different number of wildcards"""
+        with self.assertRaises(ValueError):
+            k3fnmatch.fnmap("a/b.md", "**/*.md", "*.md")
+
+        with self.assertRaises(ValueError):
+            k3fnmatch.fnmap("b.md", "*.md", "*/*.md")
+
     def test_empty_path_and_pattern(self):
         """Empty path and pattern"""
         result = k3fnmatch.fnmap("", "", "")

@@ -211,22 +211,34 @@ def fnmap(src_path: str, src_pattern: str, dst_pattern: str) -> str:
 
     dst_parts = re.split(r"([*]+)", dst_pattern)
 
-    src_parts = re.split(regex, src_path)
+    # re.split() would also match the empty string after a trailing star.
+    m = re.match(regex, src_path)
+    if m is None:
+        return ""
 
-    # strip two empty string produced.
-    src_parts = src_parts[1:-1]
+    src_parts = m.groups()
 
     #  (?s:(foo/)(?>(.*?)(/d/))(.*)(\.md))\Z
     #  src_parts:     ['foo/', 'x/y/z', '/d/', 'bar', '.md']
     #  dst_parts: ['bar/', '**', '/d/', '*', '.cn.md']
     #
-    #  Replace non-wildcard part with the corresponding one in the dst_parts
+    #  Both alternate fixed parts and wildcards, but src_parts has no empty
+    #  fixed part after a trailing wildcard.
+    src_wildcards = len(src_parts) // 2
+    dst_wildcards = len(dst_parts) // 2
+    if src_wildcards != dst_wildcards:
+        raise ValueError(
+            f"dst_pattern {dst_pattern!r} has {dst_wildcards} wildcards, "
+            f"src_pattern {src_pattern!r} has {src_wildcards}"
+        )
+
+    #  Replace wildcard part with the corresponding one in the src_parts
 
     res: list[str] = []
-    for i, p in enumerate(src_parts):
-        if dst_parts[i] in ("**", "*"):
-            res.append(p)
+    for i, p in enumerate(dst_parts):
+        if p in ("**", "*"):
+            res.append(src_parts[i])
         else:
-            res.append(dst_parts[i])
+            res.append(p)
 
     return "".join(res)
