@@ -259,6 +259,27 @@ class TestBackslashEscaping(unittest.TestCase):
         self.assertTrue(re.match(pattern, "file*"))
         self.assertFalse(re.match(pattern, "filetest"))
 
+    def test_escaped_chars_in_destination(self):
+        """A backslash in dst_pattern escapes the same chars as in translate()"""
+        cases = [
+            ("file.md", "*.md", r"\*-*.md", "*-file.md"),
+            ("file.md", "*.md", r"*\*.md", "file*.md"),
+            ("a/b.md", "**/*.md", r"**/\**.md", "a/*b.md"),
+            ("file.md", "*.md", r"*-\?\[\].md", "file-?[].md"),
+            ("file.md", "*.md", r"\\*.md", r"\file.md"),
+            ("file.md", "*.md", r"*\x.md", r"file\x.md"),
+            # A run of stars is one wildcard, as translate() compresses it.
+            ("a/b.md", "**/*.md", "***/*.txt", "a/b.txt"),
+        ]
+
+        for src, src_pat, dst_pat, expected in cases:
+            result = k3fnmatch.fnmap(src, src_pat, dst_pat)
+            self.assertEqual(result, expected, f"{src} + {src_pat} → {dst_pat}")
+
+        # An escaped star is not a wildcard, so the wildcard counts differ.
+        with self.assertRaises(ValueError):
+            k3fnmatch.fnmap("file.md", "*.md", r"\*.md")
+
 
 class TestFnmapEdgeCases(unittest.TestCase):
     """Test fnmap edge cases and error conditions"""

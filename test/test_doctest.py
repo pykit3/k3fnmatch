@@ -14,4 +14,4 @@ class TestDoctest(unittest.TestCase):
     def test_doctest_pattern(self):
         # testmod(k3fnmatch) skips the functions that k3fnmatch.pattern defines.
         result = doctest.testmod(k3fnmatch.pattern)
-        self.assertEqual(doctest.TestResults(failed=0, attempted=12), result)
+        self.assertEqual(doctest.TestResults(failed=0, attempted=13), result)

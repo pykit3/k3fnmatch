@@ -3,6 +3,10 @@ from __future__ import annotations
 import re
 from typing import Any
 
+# A backslash before one of these chars makes the char literal, in both the
+# source and the destination pattern.
+_ESCAPED = "*?[]\\"
+
 
 def translate(pat: str) -> str:
     """Translate a shell PATTERN to a regular expression with grouping.
@@ -65,7 +69,7 @@ def translate(pat: str) -> str:
         i = i + 1
 
         if c == "\\":
-            if i < n and pat[i] in "*?[]\\":
+            if i < n and pat[i] in _ESCAPED:
                 add(re.escape(pat[i]))
                 i += 1
             else:
@@ -181,6 +185,38 @@ def translate(pat: str) -> str:
     return rf"(?s:{res_str})\Z"
 
 
+def _split_dst(pat: str) -> list[str]:
+    # Split as re.split(r"([*]+)", pat) does: fixed parts at even indexes and
+    # star runs at odd indexes. An escaped char is literal, as in translate().
+    parts = [""]
+    i, n = 0, len(pat)
+    while i < n:
+        c = pat[i]
+        i += 1
+
+        in_stars = len(parts) % 2 == 0
+        if c == "*":
+            if in_stars:
+                parts[-1] += c
+            else:
+                parts.append(c)
+            continue
+
+        if c == "\\" and i < n and pat[i] in _ESCAPED:
+            c = pat[i]
+            i += 1
+
+        if in_stars:
+            parts.append(c)
+        else:
+            parts[-1] += c
+
+    if len(parts) % 2 == 0:
+        parts.append("")
+
+    return parts
+
+
 def fnmap(src_path: str, src_pattern: str, dst_pattern: str) -> str:
     """Transform a path using source and destination patterns.
 
@@ -191,7 +227,9 @@ def fnmap(src_path: str, src_pattern: str, dst_pattern: str) -> str:
     Args:
         src_path: Path to transform (e.g., "foo/x/y.md")
         src_pattern: Source pattern with wildcards (e.g., "**/*.md")
-        dst_pattern: Destination pattern with wildcards (e.g., "**/*-cn.md")
+        dst_pattern: Destination pattern with wildcards (e.g., "**/*-cn.md").
+            A backslash escapes the same chars as in translate(), so
+            ``\\*`` is a literal star and ``\\\\`` is a literal backslash.
 
     Returns:
         Transformed path (e.g., "foo/x/y-cn.md")
@@ -205,10 +243,13 @@ def fnmap(src_path: str, src_pattern: str, dst_pattern: str) -> str:
 
         >>> fnmap("file.md", "*.md", "*-backup.md")
         'file-backup.md'
+
+        >>> fnmap("file.md", "*.md", r"\\*-*.md")
+        '*-file.md'
     """
     regex = translate(src_pattern)
 
-    dst_parts = re.split(r"([*]+)", dst_pattern)
+    dst_parts = _split_dst(dst_pattern)
 
     # re.split() would also match the empty string after a trailing star.
     m = re.match(regex, src_path)
@@ -235,7 +276,8 @@ def fnmap(src_path: str, src_pattern: str, dst_pattern: str) -> str:
 
     res: list[str] = []
     for i, p in enumerate(dst_parts):
-        if p in ("**", "*"):
+        # A fixed part can hold an escaped star, so only the index tells a wildcard.
+        if i % 2 == 1:
             res.append(src_parts[i])
         else:
             res.append(p)
